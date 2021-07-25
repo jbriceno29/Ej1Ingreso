@@ -19,27 +19,28 @@ namespace Ej1API.Controllers
         {
             List<GpsDataModel> gpsDatas = new List<GpsDataModel>();
 
-            using(SqlConnection sqlConnection = new SqlConnection(conn)) {
+            using (SqlConnection sqlConnection = new SqlConnection(conn))
+            {
                 //SqlCommand cmd;
-                DataTable data = new DataTable(); 
+                DataTable data = new DataTable();
                 SqlDataAdapter cmd = new SqlDataAdapter("Get_GPSData", sqlConnection);
                 cmd.SelectCommand.CommandType = CommandType.StoredProcedure;
                 sqlConnection.Open();
 
                 // SqlDataReader reader = cmd.ExecuteReader();
                 cmd.Fill(data);
-                foreach(DataRow row in data.Rows)
+                foreach (DataRow row in data.Rows)
                 {
                     GpsDataModel gpsData = new GpsDataModel
                     {
-                        Id          = Convert.ToInt32(row["Id"]),
-                        DateSystem  = Convert.ToDateTime(row["DateSystem"]),
-                        DateEvent   = Convert.ToDateTime(row["DateEvent"]),
-                        Latitude    = float.Parse(row["Latitude"].ToString()),
-                        Longitude   = float.Parse(row["Longitude"].ToString()),
-                        Battery     = Convert.ToInt32(row["Battery"]),
-                        Source      = Convert.ToInt32(row["Source"]),
-                        Type        = Convert.ToInt32(row["Type"])
+                        Id = Convert.ToInt32(row["Id"]),
+                        DateSystem = Convert.ToDateTime(row["DateSystem"]),
+                        DateEvent = Convert.ToDateTime(row["DateEvent"]),
+                        Latitude = float.Parse(row["Latitude"].ToString()),
+                        Longitude = float.Parse(row["Longitude"].ToString()),
+                        Battery = Convert.ToInt32(row["Battery"]),
+                        Source = Convert.ToInt32(row["Source"]),
+                        Type = Convert.ToInt32(row["Type"])
                     };
 
                     gpsDatas.Add(gpsData);
@@ -86,9 +87,11 @@ namespace Ej1API.Controllers
                 sqlConnection.Close();
             }
 
-            if(gpsDatas.Count == 0) {
+            if (gpsDatas.Count == 0)
+            {
                 return NotFound();
-            } else
+            }
+            else
             {
                 return Json(gpsDatas);
             }
@@ -143,7 +146,47 @@ namespace Ej1API.Controllers
             }
             catch (Exception)
             {
-                return NotFound();
+                return BadRequest();
+                //throw;
+            }
+        }
+
+        public IHttpActionResult POSTGPSData(int Id, [FromBody] GpsDataModel gpsData)
+        {
+            int response;
+            try
+            {
+                using (SqlConnection sqlConnection = new SqlConnection(conn))
+                {
+                    SqlCommand cmd = new SqlCommand("Update_GPSData", sqlConnection);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@Response", SqlDbType.Int, 16).Direction = ParameterDirection.Output;
+                    cmd.Parameters.AddWithValue("@Id", Id);
+                    cmd.Parameters.AddWithValue("@DateSystem", gpsData.DateSystem);
+                    cmd.Parameters.AddWithValue("@DateEvent", gpsData.DateEvent);
+                    cmd.Parameters.AddWithValue("@Latitude", gpsData.Latitude);
+                    cmd.Parameters.AddWithValue("@Longitude", gpsData.Longitude);
+                    cmd.Parameters.AddWithValue("@Battery", gpsData.Battery);
+                    cmd.Parameters.AddWithValue("@Source", gpsData.Source);
+                    cmd.Parameters.AddWithValue("@Type", gpsData.Type);
+                    sqlConnection.Open();
+
+                    cmd.ExecuteNonQuery();
+                    sqlConnection.Close();
+                    response = Convert.ToInt16(cmd.Parameters[0].Value);
+                }
+
+                gpsData.Id = Id;
+                if (response == 0)
+                {
+                    return NotFound();
+                }
+
+                return Ok(gpsData);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
                 //throw;
             }
         }
